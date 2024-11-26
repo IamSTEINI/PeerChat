@@ -25,12 +25,3 @@ jobs:
 
     - name: Test
       run: go test -v ./...
-
-    - name: Create Release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        RELEASE_NAME: ${{ github.event.pull_request.number }}
-        RELEASE_TAG: ${{ github.event.pull_request.number }}
-        DRAFT: false
-        PRERELEASE: false
