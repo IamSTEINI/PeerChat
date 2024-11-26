@@ -9,6 +9,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 var connections []net.Conn
@@ -36,13 +37,14 @@ func main() {
 		fmt.Println("Invalid option. Try again.")
 	}
 	go chat()
+	go sendPeersPeriodically()
 	select {}
 }
 
 func chat() {
 	reader := bufio.NewReader(os.Stdin)
 	for {
-		fmt.Print("Enter your message (or 'exit' to quit): ")
+		fmt.Print(">")
 		message, _ := reader.ReadString('\n')
 		if strings.TrimSpace(message) == "exit" {
 			break
@@ -74,7 +76,7 @@ func handleConnection(conn net.Conn) {
 		if strings.HasPrefix(message, "GET_") {
 			switch message {
 			case "GET_PEERS":
-				peers := getMyPeers()
+				peers := append(getMyPeers(), myConn)
 				log.Printf("[PEER REQUEST] Sharing peers (%s)", strings.Join(peers, ";"))
 				send(conn, "NEW_PEERS_"+strings.Join(peers, ";"))
 			default:
@@ -164,13 +166,13 @@ func askForPeers(conn net.Conn) {
 
 func establishConnection(connString string) bool {
 	connString = strings.TrimSpace(connString)
-	fmt.Printf("[~] Connecting to %s", connString)
+	log.Printf("[~] Connecting to %s", connString)
 	conn, err := net.Dial("tcp", connString)
 	if err != nil {
 		log.Printf("[ERROR] Cannot connect to %s", connString)
 		return false
 	}
-	fmt.Printf("\033[2K\r[+] Connected to %s\n", connString)
+	log.Printf("\033[2K\r[+] Connected to %s\n", connString)
 	if !containsConnection(connections, conn) {
 		connMutex.Lock()
 		connections = append(connections, conn)
@@ -208,7 +210,7 @@ func listenAndAccept() {
 			connMutex.Unlock()
 			changeCmdTitle(fmt.Sprintf("Active peers: %d", len(connections)))
 		}
-		fmt.Printf("[+] NEW connection #%d from %s\n", len(connections), conn.RemoteAddr().String())
+		log.Printf("[+] NEW connection #%d from %s\n", len(connections), conn.RemoteAddr().String())
 		go handleConnection(conn)
 	}
 }
@@ -266,4 +268,19 @@ func containsConnectionStr(connections []net.Conn, conn string) bool {
 		}
 	}
 	return false
+}
+
+func sendPeersPeriodically() {
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+	for {
+		select {
+		case <-ticker.C:
+			peers := append(getMyPeers(), myConn)
+			log.Printf("[PERIODIC PEERS] Sharing peers (%s)", strings.Join(peers, ";"))
+			for _, conn := range connections {
+				send(conn, "NEW_PEERS_"+strings.Join(peers, ";"))
+			}
+		}
+	}
 }
