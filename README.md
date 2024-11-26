@@ -18,9 +18,8 @@ Mandatory storage and accessibility of chat logs can compromise user privacy and
 
 Decentralization is crucial for ensuring free speech and protecting against data breaches.
 
-<br>
-<br>
-**Centralized, unencrypted storage is more vulnerable to hacking than decentralized, encrypted access.**
+
+`Centralized, unencrypted storage is more vulnerable to hacking than decentralized, encrypted access.`
 
 ___
 
